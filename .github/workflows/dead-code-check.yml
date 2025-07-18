@@ -1,0 +1,71 @@
+name: Dead Code Check
+
+on:
+  pull_request:
+    branches: [ main, develop ]
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  dead-code-check:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Generate code map
+      run: npx codemap-gen -p . -o code-map.json
+      
+    - name: Check for dead code
+      run: node check-dead-code.js
+      env:
+        # Configuration options:
+        FAIL_ON_UNUSED_FILES: 'true'      # Fail if unused files found
+        FAIL_ON_UNUSED_EXPORTS: 'true'    # Fail if unused exports found
+        MAX_UNUSED_FILES: '0'             # Maximum unused files allowed
+        MAX_UNUSED_EXPORTS: '5'           # Maximum unused exports allowed
+        
+    - name: Upload code map artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: code-map
+        path: code-map.json
+        
+    - name: Comment PR with dead code summary
+      uses: actions/github-script@v7
+      if: github.event_name == 'pull_request'
+      with:
+        script: |
+          const fs = require('fs');
+          if (fs.existsSync('code-map.json')) {
+            const codemap = JSON.parse(fs.readFileSync('code-map.json', 'utf8'));
+            const { unusedFiles, unusedExports } = codemap.dead || { unusedFiles: [], unusedExports: [] };
+            
+            const comment = `## 🔍 Dead Code Analysis
+            
+            **Files analyzed:** ${Object.values(codemap).flat().length}
+            **Unused files:** ${unusedFiles.length}
+            **Unused exports:** ${unusedExports.length}
+            
+            ${unusedFiles.length > 0 ? '⚠️ Consider removing unused files to keep the codebase clean.' : '✅ No unused files detected.'}
+            ${unusedExports.length > 0 ? '⚠️ Consider removing unused exports to reduce bundle size.' : '✅ No unused exports detected.'}
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } 

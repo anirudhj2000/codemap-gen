@@ -1,0 +1,29 @@
+{
+  "name": "codemap-gen",
+  "version": "1.0.0",
+  "main": "index.js",
+  "bin": {
+    "codemap-gen": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/cli.js",
+    "dev": "ts-node src/cli.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/graphlib": "^2.1.12",
+    "@types/node": "^24.0.14",
+    "commander": "^14.0.0",
+    "eslint": "^9.31.0",
+    "fast-glob": "^3.3.3",
+    "graphlib": "^2.1.8",
+    "prettier": "^3.6.2",
+    "ts-morph": "^26.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
